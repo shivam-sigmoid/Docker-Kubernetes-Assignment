@@ -85,6 +85,6 @@ WORKDIR ${AIRFLOW_USER_HOME}
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["webserver"]
 
-FROM apache/airflow:1.10.10.1-alpha2-python3.7
-
+# FROM apache/airflow:1.10.10.1-alpha2-python3.7
+FROM 2.2.4
 COPY dags $AIRFLOW_HOME/dags
