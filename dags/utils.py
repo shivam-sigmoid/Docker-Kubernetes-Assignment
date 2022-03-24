@@ -15,4 +15,3 @@ def fetch_and_store_execution_dag_run():
         print(e)
     finally:
         conn.close()
-
