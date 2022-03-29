@@ -1,0 +1,1 @@
+kubectl port-forward svc <servicename> -p 8080:8080
