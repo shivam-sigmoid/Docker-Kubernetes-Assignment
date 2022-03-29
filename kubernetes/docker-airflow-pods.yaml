@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: airflow
+  labels:
+    app: airflow
+spec:
+  containers:
+    - name: airflow
+      image: apache-airflow==2.1.4

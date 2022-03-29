@@ -1,0 +1,232 @@
+# Install Choco
+
+Set-ExecutionPolicy Bypass -Scope Process -Force
+Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+
+
+
+
+# Choco Install dependencies
+
+choco install kubernetes-helm
+
+choco install kind
+
+
+
+
+
+# Create a new cluster with name airflow-cluster, and configurations specified in kind-cluster.yaml
+
+kind create cluster --name airflow-cluster --config kind-cluster.yaml
+
+kind get clusters
+
+
+
+
+# Helm add airflow repo to install later, get the values.yml file to cofigure airflow installation
+
+helm repo add airflow https://marclamberti.github.io/airflow-eks-helm-chart/
+
+helm repo update
+
+helm repo list
+
+helm search repo airflow/airflow
+
+helm show values airflow/airflow > values.yml
+
+
+
+
+
+# Configure values.yml file accordingly
+
+In values.yml:  (
+Check if you are using tabs for indentation. YAML doesn't allow tabs; it requires spaces.
+)
+
+defaultAirflowRepository: registry:5000/airflow-image
+
+
+defaultAirflowTag: 1.0.0
+
+env:
+	- name: "AIRFLOW__KUBERNETES__WORKER_CONTAINER_REPOSITORY"
+	  value: "registry:5000/airflow-image"
+	- name: "AIRFLOW__KUBERNETES__WORKER_CONTAINER_TAG"
+	  value: "1.0.0"
+	- name: "AIRFLOW__KUBERNETES__WORKER_CONTAINER_TAG"
+	  value: "1.0.0"
+	- name: "AIRFLOW__KUBERNETES__RUN_AS_USER"
+	  value: "5000"
+	- name: "AIRFLOW__KUBERNETES__DAGS_IN_IMAGE"
+	  value: "True"
+images:
+  postgres:
+    repository: postgres
+    tag: 9.6
+    pullPolicy: IfNotPresent
+
+
+
+
+
+
+
+# create registry container
+
+docker run -d -p 5000:5000 --restart=always --name registry registry:2
+
+
+
+# connect the registry to the cluster network
+
+docker network connect kind registry 
+
+
+# Annotate Nodes
+
+kubectl get nodes
+kubectl annotate node <node-name> kind.x-k8s.io/registry=localhost:5000 --context kind-airflow-cluster
+
+
+
+
+# Create a Dockerfile
+
+	FROM apache/airflow:1.10.10.1-alpha2-python3.7
+	(OR)
+	FROM puckel/docker-airflow:1.10.9    // Here python not require, because it is mentioned in dependencies
+	COPY dags $AIRFLOW_HOME/dags
+
+
+
+# Create Docker Image
+
+docker build -t airflow-image:1.0.0 .
+
+docker image ls
+
+
+		# To delete cluster
+		Delete kubernetes cluster:
+
+		kind delete cluster --name=airflow-cluster
+
+
+
+# Tag the image as localhost:5000/airflow-image:1.0.0. This creates an additional tag for the existing image. When the first part of the tag is a hostname and port, Docker interprets this as the location of a registry, when pushing
+
+docker tag airflow-image:1.0.0 localhost:5000/airflow-image:1.0.0
+
+
+
+
+# Push the image to the local registry running at localhost:5000
+
+docker push localhost:5000/airflow-image:1.0.0
+(OR)
+docker tag airflow-image:1.0.0 127.0.0.1:5000/airflow-image:1.0.0
+docker push 127.0.0.1:5000/airflow-image:1.0.0
+docker ps
+
+
+
+# Install and run the airflow inside pods in 'kind-airflow-cluster' cluster nodes
+
+helm install -f values.yml --kube-context kind-airflow-cluster airflow airflow/airflow
+(OR)
+helm upgrade -f values.yml --kube-context kind-airflow-cluster airflow airflow/airflow
+
+kubectl get pods --context kind-airflow-cluster
+
+kubectl port-forward svc/airflow-webserver 8080:8080 --context kind-airflow-cluster
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
